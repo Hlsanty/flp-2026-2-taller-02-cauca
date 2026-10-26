@@ -1,5 +1,5 @@
 #lang eopl
-;Autores: Nombre1 Codigo1, Nombre2 Codigo2
+;Autores: Santiago Alexander Criollo 2380661-3743
 
 ;; Taller 2 — El intérprete de Cauca.
 ;; Las primitivas del lenguaje y las verificaciones de tipo y de
@@ -57,6 +57,17 @@
     (if (>= (length args) n)
             #t
             (eopl:error quien "Se esperaban al menos ~s argumentos y llegaron ~s" n (length args)))))
+
+
+;; exigir-no-cero : lista x symbol -> boolean
+;; Retorna #t si ningún elemento de la lista es cero; si no, levanta error
+;; (división por cero).
+(define exigir-no-cero
+  (lambda (args quien)
+    (cond
+      ((null? args) #t)
+      ((zero? (car args)) (eopl:error quien "División por cero"))
+      (else (exigir-no-cero (cdr args) quien)))))
 
 ;; evaluar-primitiva : primitiva x lista de valores -> valor
 ;; Verifica la cantidad y el tipo de los argumentos y aplica la

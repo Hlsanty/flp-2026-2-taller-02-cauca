@@ -1,5 +1,5 @@
 #lang eopl
-;Autores: Nombre1 Codigo1, Nombre2 Codigo2
+;Autores: Santiago Alexander Criollo 2380661-3743
 
 ;; Taller 2 — El intérprete de Cauca.
 ;; Batería de pruebas con rackunit. Llega escrita en el fork y no se
@@ -214,3 +214,153 @@ in case dia of 1 => 100 of 3 => 300 otherwise => 0 end end") 0))
 (eopl:printf "~%==========================================~%")
 (eopl:printf "  pruebas fallidas en total: ~s~%" fallidas)
 (eopl:printf "==========================================~%")
+
+
+;;; ==========================================================
+;;; Pruebas del grupo
+;;; ==========================================================
+
+(require rackunit)
+(require rackunit/text-ui)
+
+;; ejecutar-ok : string x valor -> void
+;; Evalúa el programa con interpretar y comprueba que dé el valor esperado.
+(define ejecutar-ok
+  (lambda (texto esperado)
+    (check-equal? (interpretar texto) esperado texto)))
+
+;; ejecutar-error : string -> void
+;; Comprueba que evaluar el programa levante un error.
+(define ejecutar-error
+  (lambda (texto)
+    (check-exn exn:fail? (lambda () (interpretar texto)))))
+
+;; raiz : string -> expresion
+;; Parsea el programa y retorna la expresión que lo compone.
+(define raiz
+  (lambda (texto)
+    (cases programa (parser texto)
+      (a-program (exp) exp))))
+
+(define suite-taller-extra
+  (test-suite "Pruebas del grupo"
+
+    (test-case "scanner"
+      (check-true (list? (scanner "let a = 5 in a end")))
+      (check-equal? (scanner "1 // comentario\n 2") (scanner "1 2"))
+      (check-equal? (scanner "  +(1,   2)  ") (scanner "+(1,2)"))
+      (check-equal? (scanner "aplicar-n") (scanner "aplicar -n"))
+      (check-not-equal? (scanner "-5") (scanner "5"))
+      (check-not-equal? (scanner "3.5") (scanner "3"))
+      (check-not-equal? (scanner "abc") (scanner "abd")))
+
+    (test-case "parser"
+      (check-true (programa? (parser "5")))
+      (check-true (cases expresion (raiz "5") (lit-exp (d) (= d 5)) (else #f)))
+      (check-true (cases expresion (raiz "x") (var-exp (id) (eqv? id 'x)) (else #f)))
+      (check-true (cases expresion (raiz "true") (true-exp () #t) (else #f)))
+      (check-true (cases expresion (raiz "+(1, 2)")
+                    (prim-exp (prim rands) (= (length rands) 2)) (else #f)))
+      (check-true (cases expresion (raiz "if true then 1 else 2 end")
+                    (if-exp (t a b) #t) (else #f)))
+      (check-true (cases expresion (raiz "let a = 1 b = 2 in a end")
+                    (let-exp (ids rands body) (equal? ids '(a b))) (else #f)))
+      (check-true (cases expresion (raiz "proc (x, y) x end")
+                    (proc-exp (ids body) (equal? ids '(x y))) (else #f)))
+      (check-true (cases expresion (raiz "apply f (1)")
+                    (app-exp (rator rands) (= (length rands) 1)) (else #f)))
+      (check-true (cases expresion (raiz "letrec f (x) = x in 1 end")
+                    (letrec-exp (names idss bodies body) (equal? names '(f))) (else #f)))
+      (check-true (cases expresion (raiz "case 1 of 1 => 2 otherwise => 3 end")
+                    (case-exp (c vs as d) (equal? vs '(1))) (else #f)))
+      (check-exn exn:fail? (lambda () (parser "if true then 1 end"))))
+
+    (test-case "ambiente"
+      (check-equal? (apply-env (ambiente-inicial) 'q) 2)
+      (check-equal? (apply-env (ambiente-extendido '(a) '(1)
+                                (ambiente-extendido '(a) '(2) (ambiente-vacio))) 'a) 1)
+      (check-exn exn:fail? (lambda () (apply-env (ambiente-vacio) 'zzz))))
+
+    (test-case "parte 1: base"
+      (ejecutar-ok "5" 5)
+      (ejecutar-ok "n" 10)
+      (ejecutar-ok "true" #t)
+      (ejecutar-ok "false" #f)
+      (ejecutar-ok "+(1, 2, 3)" 6)
+      (ejecutar-ok "-(10, 3)" 7)
+      (ejecutar-ok "*(2, 3, 4)" 24)
+      (ejecutar-ok "/(20, 4)" 5)
+      (ejecutar-ok "+(1.5, 2.5)" 4.0)
+      (ejecutar-ok "add1(4)" 5)
+      (ejecutar-ok "sub1(4)" 3)
+      (ejecutar-ok ">(3, 2)" #t)
+      (ejecutar-ok ">=(2, 2)" #t)
+      (ejecutar-ok "<(3, 2)" #f)
+      (ejecutar-ok "<=(2, 3)" #t)
+      (ejecutar-ok "==(4, 4)" #t)
+      (ejecutar-ok "not(true)" #f)
+      (ejecutar-ok "and(true, false)" #f)
+      (ejecutar-ok "or(false, true)" #t)
+      (ejecutar-ok "if >(n, m) then 1 else 2 end" 1)
+      (ejecutar-ok "let a = 2 b = 3 in *(a, b) end" 6)
+      (ejecutar-ok "let n = 1 in n end" 1)
+      (ejecutar-ok "let base = 8 altura = 5 in if and(>(base, 0), >(altura, 0)) then *(base, altura) else 0 end end" 40))
+
+    (test-case "parte 2: primitivas nuevas"
+      (ejecutar-ok "abs(-5)" 5)
+      (ejecutar-ok "abs(3)" 3)
+      (ejecutar-ok "abs(-2.5)" 2.5)
+      (ejecutar-ok "mcd(12, 18)" 6)
+      (ejecutar-ok "mcd(12, 18, 8)" 2)
+      (ejecutar-ok "mcd(7, 5)" 1)
+      (ejecutar-ok "mcm(4, 6)" 12)
+      (ejecutar-ok "mcm(2, 3, 4)" 12)
+      (ejecutar-ok "mcm(5, 5)" 5)
+      (ejecutar-ok "promedio(2, 4)" 3)
+      (ejecutar-ok "promedio(10)" 10)
+      (ejecutar-ok "promedio(1, 2, 3, 6)" 3)
+      (ejecutar-ok "xor(true, false)" #t)
+      (ejecutar-ok "xor(true, true)" #f)
+      (ejecutar-ok "xor(false, false)" #f)
+      (ejecutar-ok "implica(true, false)" #f)
+      (ejecutar-ok "implica(false, true)" #t)
+      (ejecutar-ok "implica(false, false)" #t)
+      (ejecutar-ok "entre(5, 1, 10)" #t)
+      (ejecutar-ok "entre(1, 1, 10)" #t)
+      (ejecutar-ok "entre(11, 1, 10)" #f)
+      (ejecutar-error "abs(true)")
+      (ejecutar-error "mcd(4, 2.5)")
+      (ejecutar-error "mcm(true, 2)")
+      (ejecutar-error "promedio(1, true)")
+      (ejecutar-error "xor(1, true)")
+      (ejecutar-error "implica(true, 1)")
+      (ejecutar-error "entre(true, 1, 2)"))
+
+    (test-case "parte 3: procedimientos y clausuras"
+      (ejecutar-ok "let f = proc () 7 end in apply f () end" 7)
+      (ejecutar-ok "let f = proc (x) add1(x) end in apply f (4) end" 5)
+      (ejecutar-ok "let f = proc (a, b, c) +(a, b, c) end in apply f (1, 2, 3) end" 6)
+      (ejecutar-ok "let aplicar = proc (g, v) apply g (v) end in let doble = proc (x) *(x, 2) end in apply aplicar (doble, 5) end end" 10)
+      (ejecutar-ok "let sumador = proc (a) proc (b) +(a, b) end end in let suma3 = apply sumador (3) in apply suma3 (4) end end" 7)
+      (ejecutar-ok "let factor = 10 in let escalar = proc (v) *(v, factor) end in let factor = 1000 in apply escalar (5) end end end" 50))
+
+    (test-case "parte 4: letrec y case"
+      (ejecutar-ok "letrec fact (n) = if ==(n, 0) then 1 else *(n, apply fact (sub1(n))) end in apply fact (5) end" 120)
+      (ejecutar-ok "letrec potencia (base, exp) = if ==(exp, 0) then 1 else *(base, apply potencia (base, sub1(exp))) end in apply potencia (2, 10) end" 1024)
+      (ejecutar-ok "letrec par (k) = if ==(k, 0) then true else apply impar (sub1(k)) end impar (k) = if ==(k, 0) then false else apply par (sub1(k)) end in apply par (10) end" #t)
+      (ejecutar-ok "letrec iterar (f, x, k) = if ==(k, 0) then x else apply iterar (f, apply f (x), sub1(k)) end in apply iterar (proc (z) *(z, 2) end, 1, 5) end" 32)
+      (ejecutar-ok "let dia = 3 in case dia of 1 => 100 of 3 => 300 of 7 => 700 otherwise => 0 end end" 300)
+      (ejecutar-ok "case 2 of 2 => 10 of 2 => 20 otherwise => 0 end" 10)
+      (ejecutar-ok "case 9 of 1 => 1 otherwise => 99 end" 99))
+
+    (test-case "errores del enunciado"
+      (ejecutar-error "if 1 then 2 else 3 end")
+      (ejecutar-error "zzz")
+      (ejecutar-error "apply 5 (1)")
+      (ejecutar-error "let f = proc (x) x end in apply f (1, 2) end")
+      (ejecutar-error "let f = proc (x, y) x end in apply f (1) end")
+      (ejecutar-error "+(1, true)")
+      (ejecutar-error "not(5)")
+      (ejecutar-error "case true of 1 => 1 otherwise => 0 end"))))
+
+(run-tests suite-taller-extra)
