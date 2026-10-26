@@ -20,5 +20,14 @@
 ;; campo que queda sin verificar.
 
 (require "sintaxis.rkt")
+;; procval : tipo de dato
+;; Valor procedimiento. cerradura guarda parámetros, cuerpo sin evaluar y el
+;; ambiente de definición. El campo env acepta cualquier valor para evitar el
+;; ciclo de módulos con ambiente.rkt.
+(define-datatype procval procval?
+  (cerradura
+   (ids (list-of symbol?))
+   (body expresion?)
+   (env (lambda (v) #t))))
 
 (provide (all-defined-out))
