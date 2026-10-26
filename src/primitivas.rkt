@@ -49,6 +49,7 @@
             #t
             (eopl:error quien "Se esperaban ~s argumentos y llegaron ~s" n (length args)))))
 
+
 ;; exigir-minimo : lista x int x symbol -> boolean
 ;; Retorna #t si llegaron al menos n argumentos; si no, levanta error.
 (define exigir-minimo

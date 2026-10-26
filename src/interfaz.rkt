@@ -1,5 +1,5 @@
 #lang eopl
-;Autores: Nombre1 Codigo1, Nombre2 Codigo2
+;Autores: Santiago Alexander Criollo 2380661-3743
 
 ;; Taller 2 — El intérprete de Cauca.
 ;; El punto de entrada y el REPL. Requiere sintaxis.rkt e interprete.rkt.

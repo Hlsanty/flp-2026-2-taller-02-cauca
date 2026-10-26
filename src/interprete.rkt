@@ -57,6 +57,7 @@
       ((= valor (car valores)) (evaluar-expresion (car acciones) env))
       (else (seleccionar-rama valor (cdr valores) (cdr acciones) default env)))))
 
+
 ;; evaluar-expresion : expresion x ambiente -> valor
 ;; Recorre el árbol de sintaxis abstracta con cases y evalúa cada
 ;; variante según la semántica del enunciado. El if liga el resultado de
