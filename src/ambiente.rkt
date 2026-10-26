@@ -1,5 +1,5 @@
 #lang eopl
-;Autores: Nombre1 Codigo1, Nombre2 Codigo2
+;Autores: Santiago Alexander Criollo 2380661-3743
 
 ;; Taller 2 — El intérprete de Cauca.
 ;; El TAD ambiente, la búsqueda de ligaduras y el ambiente inicial.
